@@ -12,6 +12,9 @@ const REGEX_SPECIAL = /[\W_]/; // Présence de caractères spéciaux
 function checkPasswordStrength(password) {
   let errors = [];
 
+  if (password === undefined) {
+    errors.push("Le mot de passe n'est pas défini.");
+  }
   if (password.length < MIN_LENGTH) {
     errors.push(
       "Le mot de passe doit avoir au moins " + MIN_LENGTH + " caractères."
@@ -33,7 +36,8 @@ function checkPasswordStrength(password) {
 }
 
 const register = (req, res, next) => {
-  const errors = checkPasswordStrength(req.body.password);
+  let password = req.body.password;
+  const errors = checkPasswordStrength(password);
   if (errors.length > 0) {
     return res.status(400).json({ errors: errors });
   }
@@ -46,7 +50,7 @@ const register = (req, res, next) => {
       });
       user
         .save()
-        .then(() => res.status(201).json({ message: "Utilisateur créé !" }))
+        .then(() => res.status(201).json({ user }))
         .catch((error) => res.status(400).json({ error }));
     })
     .catch((error) => res.status(500).json({ error }));

@@ -26,16 +26,18 @@ const bookSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    ratings: {
-      userId: {
-        type: String,
-        required: true,
+    ratings: [
+      {
+        userId: {
+          type: String,
+          required: true,
+        },
+        grade: {
+          type: Number,
+          required: true,
+        },
       },
-      grade: {
-        type: Number,
-        required: true,
-      },
-    },
+    ],
     averageRating: {
       type: Number,
       required: false,

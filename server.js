@@ -20,6 +20,7 @@ app.use(
 // Middleware qui permet de traiter les données de la Request
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use("/images", express.static("./images"));
 
 app.use("/api/books", require("./routes/books.routes"));
 app.use("/api/auth", require("./routes/auth.routes"));
