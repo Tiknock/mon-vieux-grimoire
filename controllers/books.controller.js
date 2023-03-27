@@ -21,10 +21,12 @@ const getOneBook = (req, res, next) => {
 
 const getBestRating = (req, res, next) => {
   Book.find()
-    .then((books) => {
+    .then((book) => {
       res
         .status(200)
-        .json(books.sort((a, b) => b.averageRating - a.averageRating).slice(4));
+        .json(
+          book.sort((a, b) => b.averageRating - a.averageRating).slice(0, 3)
+        );
     })
     .catch((error) => {
       res.status(400).json({
@@ -83,7 +85,7 @@ const editBook = (req, res, next) => {
           });
         });
     } else {
-      res.status(401).json({
+      res.status(403).json({
         error: "Vous n'êtes pas autorisé à modifier ce livre.",
       });
     }
@@ -111,7 +113,7 @@ const deleteBook = (req, res, next) => {
             });
         });
       } else {
-        res.status(401).json({
+        res.status(403).json({
           error: "Vous n'êtes pas autorisé à supprimer ce livre.",
         });
       }
@@ -120,12 +122,22 @@ const deleteBook = (req, res, next) => {
 };
 
 const setRating = (req, res, next) => {
-  console.log(req.params.id);
   Book.findOne({ _id: req.params.id })
+    // .then((book) => {
+    //   return book.save();
+    // })
     .then((book) => {
-      return book.save();
-    })
-    .then((book) => {
+      let userId = req.body.userId;
+      let grade = req.body.rating;
+      let body = { userId, grade };
+      book.ratings.push(body);
+      console.log(book.ratings);
+      const ratingsCount = book.ratings.length;
+      let sum = 0;
+      for (let i = 0; i < ratingsCount; i++) {
+        sum += book.ratings[i].grade;
+      }
+      book.averageRating = sum / ratingsCount;
       const cloneBook = Object.assign({}, book.toObject());
       cloneBook.rating = book.rating;
       return Book.updateOne({ _id: req.params.id }, cloneBook).then(() =>
