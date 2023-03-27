@@ -8,6 +8,7 @@ const REGEX_UPPERCASE = /[A-Z]/; // Présence de lettres majuscules
 const REGEX_LOWERCASE = /[a-z]/; // Présence de lettres minuscules
 const REGEX_DIGIT = /[0-9]/; // Présence de chiffres
 const REGEX_SPECIAL = /[\W_]/; // Présence de caractères spéciaux
+const REGEX_EMAIL = /^[^\s@]+@[^\s@]+.[^\s@]+$/; // Format de l'email
 
 function checkPasswordStrength(password) {
   let errors = [];
@@ -38,6 +39,12 @@ function checkPasswordStrength(password) {
 const register = (req, res, next) => {
   let password = req.body.password;
   const errors = checkPasswordStrength(password);
+
+  const email = req.body.email;
+  if (!REGEX_EMAIL.test(email)) {
+    errors.push("L'e-mail n'est pas valide.");
+  }
+
   if (errors.length > 0) {
     return res.status(400).json({ errors: errors });
   }
