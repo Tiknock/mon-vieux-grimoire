@@ -2,52 +2,69 @@ const User = require("../models/auth.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// Liste de critères de sécurité pour un mot de passe solide
-const MIN_LENGTH = 8; // Longueur minimale du mot de passe
-const REGEX_UPPERCASE = /[A-Z]/; // Présence de lettres majuscules
-const REGEX_LOWERCASE = /[a-z]/; // Présence de lettres minuscules
-const REGEX_DIGIT = /[0-9]/; // Présence de chiffres
-const REGEX_SPECIAL = /[\W_]/; // Présence de caractères spéciaux
-const REGEX_EMAIL = /^[^\s@]+@[^\s@]+.[^\s@]+$/; // Format de l'email
+// List of security criteria for a strong password
+const MIN_LENGTH = 8; // Minimum length of password
+const REGEX_UPPERCASE = /[A-Z]/; // Presence of uppercase letters
+const REGEX_LOWERCASE = /[a-z]/; // Presence of lowercase letters
+const REGEX_DIGIT = /[0-9]/; // Presence of digits
+const REGEX_SPECIAL = /[\W_]/; // Presence of special characters
+const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email format
 
+// Checks the strength of the password provided
 function checkPasswordStrength(password) {
   let errors = [];
 
+  // Check if password is undefined
   if (password === undefined) {
-    errors.push("Le mot de passe n'est pas défini.");
+    errors.push("Password is not defined.");
   }
+
+  // Check if password length is less than minimum required length
   if (password.length < MIN_LENGTH) {
-    errors.push(
-      "Le mot de passe doit avoir au moins " + MIN_LENGTH + " caractères."
-    );
+    errors.push("Password must have at least " + MIN_LENGTH + " characters.");
   }
+
+  // Check if password contains at least one uppercase letter
   if (!REGEX_UPPERCASE.test(password)) {
-    errors.push("Le mot de passe doit contenir au moins une lettre majuscule.");
+    errors.push("Password must contain at least one uppercase letter.");
   }
+
+  // Check if password contains at least one lowercase letter
   if (!REGEX_LOWERCASE.test(password)) {
-    errors.push("Le mot de passe doit contenir au moins une lettre minuscule.");
+    errors.push("Password must contain at least one lowercase letter.");
   }
+
+  // Check if password contains at least one digit
   if (!REGEX_DIGIT.test(password)) {
-    errors.push("Le mot de passe doit contenir au moins un chiffre.");
+    errors.push("Password must contain at least one digit.");
   }
+
+  // Check if password contains at least one special character
   if (!REGEX_SPECIAL.test(password)) {
-    errors.push("Le mot de passe doit contenir au moins un caractère spécial.");
+    errors.push("Password must contain at least one special character.");
   }
+
   return errors;
 }
 
+// Registers a new user
 const register = (req, res, next) => {
   let password = req.body.password;
   const errors = checkPasswordStrength(password);
 
   const email = req.body.email;
+
+  // Check if email is valid
   if (!REGEX_EMAIL.test(email)) {
-    errors.push("L'e-mail n'est pas valide.");
+    errors.push("Email is not valid.");
   }
 
+  // If there are errors in password or email, return error response
   if (errors.length > 0) {
     return res.status(400).json({ errors: errors });
   }
+
+  // Hash password and save user to database
   bcrypt
     .hash(req.body.password, 10)
     .then((hash) => {
@@ -63,21 +80,26 @@ const register = (req, res, next) => {
     .catch((error) => res.status(500).json({ error }));
 };
 
+// Logs in a user
 const login = (req, res, next) => {
   let email = req.body.email;
   let password = req.body.password;
 
+  // Find user with matching email in the database
   User.findOne({ email })
     .then((user) => {
       if (!user) {
-        return res.status(401).json({ error: "Utilisateur non trouvé !" });
+        // If user is not found, return error response
+        return res.status(401).json({ error: "User not found!" });
       }
       bcrypt
         .compare(password, user.password)
         .then((valid) => {
           if (!valid) {
-            return res.status(401).json({ error: "Mot de passe incorrect !" });
+            // If password is incorrect, return error response
+            return res.status(401).json({ error: "Incorrect password!" });
           }
+          // If login is successful, return user ID and JWT token
           res.status(200).json({
             userId: user._id,
             token: jwt.sign({ userId: user._id }, "RANDOM_TOKEN_SECRET", {
