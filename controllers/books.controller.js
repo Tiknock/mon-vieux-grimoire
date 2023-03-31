@@ -195,31 +195,29 @@ const setRating = (req, res, next) => {
           .status(400)
           .json({ error: "Merci de remplir tous les champs." });
       }
-      let alreadyRated = false;
-      for (let i = 0; i < ratingsCount; i++) {
-        if (book.ratings[i].userId === userId) {
-          alreadyRated = true;
-          return res.status(400).json({ error: "Vous avez déjà voté." });
-        } else {
-          let body = { userId, grade };
-          // Add the new rating to the book's list of ratings
-          book.ratings.push(body);
-          // Update the book's average rating
-          const ratingsCount = book.ratings.length;
-          let sum = 0;
-          for (let i = 0; i < ratingsCount; i++) {
-            sum += book.ratings[i].grade;
-          }
-          book.averageRating = sum / ratingsCount;
-          // Convert the book into the expected format
-          const cloneBook = Object.assign({}, book.toObject());
-          cloneBook.rating = book.rating;
-          // Update the book object in the database with the new average rating and the new rating list
-          return Book.updateOne({ _id: req.params.id }, cloneBook).then(() =>
-            res.status(201).json(cloneBook)
-          );
-        }
+      const alreadyRated = book.ratings.some(
+        (rating) => rating.userId === userId
+      );
+      if (alreadyRated) {
+        return res.status(400).json({ error: "Vous avez déjà voté." });
       }
+      const newRating = { userId, grade };
+      // Add the new rating to the book's list of ratings
+      book.ratings.push(newRating);
+      // Update the book's average rating
+      const ratingsCount = book.ratings.length;
+      let sum = 0;
+      for (let i = 0; i < ratingsCount; i++) {
+        sum += book.ratings[i].grade;
+      }
+      book.averageRating = sum / ratingsCount;
+      // Convert the book into the expected format
+      const cloneBook = Object.assign({}, book.toObject());
+      cloneBook.ratings = book.ratings;
+      // Update the book object in the database with the new average rating and the new rating list
+      return Book.updateOne({ _id: req.params.id }, cloneBook).then(() =>
+        res.status(201).json(cloneBook)
+      );
     })
     .catch((err) => next(err));
 };

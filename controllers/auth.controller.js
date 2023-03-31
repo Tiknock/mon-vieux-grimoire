@@ -102,7 +102,7 @@ const login = (req, res, next) => {
           // If login is successful, return user ID and JWT token
           res.status(200).json({
             userId: user._id,
-            token: jwt.sign({ userId: user._id }, "RANDOM_TOKEN_SECRET", {
+            token: jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
               expiresIn: "24h",
             }),
           });
