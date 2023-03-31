@@ -46,6 +46,19 @@ const setBooks = (req, res, next) => {
     }
     // Parse the book object from the request body
     const bookObject = JSON.parse(req.body.book);
+    // Check value one by one
+    const emptyFields = [];
+    for (const field in bookObject) {
+      if (!bookObject[field]) {
+        emptyFields.push(field);
+      }
+    }
+    if (emptyFields.length > 0) {
+      const message = `Les champs suivants sont vides : ${emptyFields.join(
+        ", "
+      )}`;
+      return res.status(400).json({ message });
+    }
     // Delete the _id property to prevent duplicate IDs
     delete bookObject._id;
     // Create a new Book object with the parsed book object and the image URL
@@ -68,6 +81,10 @@ const setBooks = (req, res, next) => {
 
 // Update an existing book (auth)
 const editBook = (req, res, next) => {
+  // Check if the ID is valid
+  if (!req.params.id) {
+    return res.status(400).json({ error: "L'ID du livre est manquant." });
+  }
   // Find the book by its ID
   const book = Book.findOne({ _id: req.params.id }).then((book) => {
     // If an image was uploaded, update the book object with the new image URL
@@ -80,6 +97,20 @@ const editBook = (req, res, next) => {
           }`,
         }
       : { ...req.body };
+
+    // Check if all required fields are present
+    const emptyFields = [];
+    for (const field in bookObject) {
+      if (!bookObject[field]) {
+        emptyFields.push(field);
+      }
+    }
+    if (emptyFields.length > 0) {
+      const message = `Les champs suivants sont vides : ${emptyFields.join(
+        ", "
+      )}`;
+      return res.status(400).json({ message });
+    }
     // Check if the authenticated user is the owner of the book
     if (book.userId === req.auth.userId) {
       // Update the Book object in the database with the new book object
@@ -110,6 +141,10 @@ const editBook = (req, res, next) => {
 
 // Delete one book (auth)
 const deleteBook = (req, res, next) => {
+  // Check if the ID is valid
+  if (!req.params.id) {
+    return res.status(400).json({ error: "L'ID du livre est manquant." });
+  }
   // Find the book by its ID
   Book.findOne({ _id: req.params.id })
     .then((book) => {
@@ -154,23 +189,37 @@ const setRating = (req, res, next) => {
       // Extract the user ID and rating from the request body
       let userId = req.body.userId;
       let grade = req.body.rating;
-      let body = { userId, grade };
-      // Add the new rating to the book's list of ratings
-      book.ratings.push(body);
-      // Update the book's average rating
-      const ratingsCount = book.ratings.length;
-      let sum = 0;
-      for (let i = 0; i < ratingsCount; i++) {
-        sum += book.ratings[i].grade;
+      // Check if userId and grade are defined and have a value
+      if (!userId || !grade) {
+        return res
+          .status(400)
+          .json({ error: "Merci de remplir tous les champs." });
       }
-      book.averageRating = sum / ratingsCount;
-      // Clone the book object to avoid changing the original object
-      const cloneBook = Object.assign({}, book.toObject());
-      cloneBook.rating = book.rating;
-      // Update the book object in the database with the new average rating and the new rating list
-      return Book.updateOne({ _id: req.params.id }, cloneBook).then(() =>
-        res.status(201).json(cloneBook)
-      );
+      let alreadyRated = false;
+      for (let i = 0; i < ratingsCount; i++) {
+        if (book.ratings[i].userId === userId) {
+          alreadyRated = true;
+          return res.status(400).json({ error: "Vous avez déjà voté." });
+        } else {
+          let body = { userId, grade };
+          // Add the new rating to the book's list of ratings
+          book.ratings.push(body);
+          // Update the book's average rating
+          const ratingsCount = book.ratings.length;
+          let sum = 0;
+          for (let i = 0; i < ratingsCount; i++) {
+            sum += book.ratings[i].grade;
+          }
+          book.averageRating = sum / ratingsCount;
+          // Convert the book into the expected format
+          const cloneBook = Object.assign({}, book.toObject());
+          cloneBook.rating = book.rating;
+          // Update the book object in the database with the new average rating and the new rating list
+          return Book.updateOne({ _id: req.params.id }, cloneBook).then(() =>
+            res.status(201).json(cloneBook)
+          );
+        }
+      }
     })
     .catch((err) => next(err));
 };
