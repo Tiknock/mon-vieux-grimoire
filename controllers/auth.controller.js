@@ -53,7 +53,6 @@ const register = (req, res, next) => {
   const errors = checkPasswordStrength(password);
 
   const email = req.body.email;
-
   // Check if email is valid
   if (!REGEX_EMAIL.test(email)) {
     errors.push("Email is not valid.");
@@ -69,7 +68,7 @@ const register = (req, res, next) => {
     .hash(req.body.password, 10)
     .then((hash) => {
       const user = new User({
-        email: req.body.email,
+        email: req.body.email.toLowerCase(),
         password: hash,
       });
       user
@@ -82,7 +81,7 @@ const register = (req, res, next) => {
 
 // Logs in a user
 const login = (req, res, next) => {
-  let email = req.body.email;
+  let email = req.body.email.toLowerCase();
   let password = req.body.password;
 
   // Find user with matching email in the database
